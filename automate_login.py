@@ -51,7 +51,7 @@ def open_browser_at_scheduled_time():
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
-                    time.sleep(5)
+                    time.sleep(120)
 
                     # Accept any alert or confirmation popup
                     try:

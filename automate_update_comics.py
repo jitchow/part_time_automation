@@ -14,16 +14,22 @@ categories = {
     '恋爱漫画': 9
 }
 
+
 def select_category(title, desc):
-    keywords = ['学', '校', '教', '女', '爱']
-    for keyword, category in zip(keywords, ['校园漫画', '少女漫画', '恋爱漫画', '剧情韩漫', '剧情韩漫']):
-        if any(keyword in title or keyword in desc for keyword in [keyword]):
-            return categories[category]
+    try:
+        if any(keyword in title or keyword in desc for keyword in ['学', '校', '教']):
+            return categories['校园漫画']
+        elif any(keyword in title or keyword in desc for keyword in ['女']):
+            return categories['少女漫画']
+        elif any(keyword in title or keyword in desc for keyword in ['爱']):
+            return categories['恋爱漫画']
+        elif detect(title) == 'ja' or detect(desc) == 'ja':
+            return categories['日韩漫画']
+        else:
+            return categories['剧情韩漫']
+    except:
+        return categories['剧情韩漫']
 
-    if detect(title) == 'ja' or detect(desc) == 'ja':
-        return categories['日韩漫画']
-
-    return categories['剧情韩漫']
 
 url = "https://madmin.9xyrp3kg4b86.com/index/index"
 driver = webdriver.Edge(service=Service(executable_path='msedgedriver.exe'))
