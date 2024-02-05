@@ -17,7 +17,7 @@ import time
 api_id = 24923597
 api_hash = "7a04f08385f68ff36841b0c65b83be86"
 CHANNEL_ID = -4041523708  # -4041523708 kefu -4038638534 test
-initial_url = "https://www.ina33.com/"
+initial_url = "https://www.ina72.com/"
 client = TelegramClient('session', api_id, api_hash)
 
 
@@ -133,10 +133,9 @@ if __name__ == "__main__":
         'Thursday' : time_ranges['3pmto9pm'],
         'Friday' : time_ranges['3pmto9pm'],
         'Saturday' : time_ranges['9amto6pm'],
-        'Sunday' : time_ranges['3pmto9pm']
+        # 'Sunday' : time_ranges['9amto6pm'] # delete this after 5/2/2024
     }
 
-    # scheduled_times = ['19:22']
     schedule_telegram_messages(scheduled_times)
 
     while True:
