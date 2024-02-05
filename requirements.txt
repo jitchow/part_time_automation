@@ -1,0 +1,7 @@
+langdetect
+selenium
+datetime
+asyncio
+schedule
+telethon
+requests

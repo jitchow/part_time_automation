@@ -1,6 +1,5 @@
 import asyncio
 import schedule
-import time
 from telethon import TelegramClient
 
 from selenium import webdriver
