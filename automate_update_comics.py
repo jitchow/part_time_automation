@@ -3,6 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 import time
+from tqdm import tqdm
+
 
 categories = {
     '剧情韩漫': 1,
@@ -65,7 +67,7 @@ try:
 
     driver.find_element(By.XPATH, "//a[@class='layui-laypage-last']").click()
 
-    for i in range(100):
+    for iteration in tqdm(range(100), desc="Processing", unit="iteration"):
         first_row = driver.find_element(By.XPATH, "//tbody/tr[1]")
         first_row.find_element(By.XPATH, "//button[contains(@onclick, 'set_edit')]").click()
 
@@ -89,8 +91,6 @@ try:
         driver.switch_to.default_content()
         iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
         driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
-
-        print(i + 1)
 
 finally:
     driver.quit()
