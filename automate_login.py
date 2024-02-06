@@ -129,7 +129,7 @@ async def main():
                     if haveNewMessage:
                         await telegram_send_notification()
 
-                    time.sleep(240)
+                    time.sleep(120)
 
                 # Close the browser when it's time to close
                 driver.find_element(By.XPATH, "//div[@class='status-box']").click()
