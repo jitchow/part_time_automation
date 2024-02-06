@@ -3,9 +3,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from telethon import TelegramClient
 
 import time
 from datetime import datetime
+import json
+import asyncio
+
+# Use your own values from my.telegram.org
+api_id = 24923597
+api_hash = "7a04f08385f68ff36841b0c65b83be86"
+CHANNEL_ID = -4038638534  # -4041523708 kefu -4038638534 test
+client = TelegramClient('session', api_id, api_hash)
 
 scheduled_times = {
     'Monday': ['15:00', '21:00'],
@@ -26,7 +35,55 @@ def is_time_between(start_time, end_time, check_time=None):
     return start_time <= check_time <= end_time
 
 
-def open_browser_at_scheduled_time():
+def is_list_same(list1, list2):
+    return len(list1) == len(list2) and all(x == y for x, y in zip(list1, list2))
+
+
+def is_last_chat_item_right_box(driver):
+    main_div = driver.find_element(By.ID, "chat_scroll")
+    chat_items = main_div.find_elements(By.CSS_SELECTOR, "div.chat-item.right-box")
+
+    # Check if the last direct child of main_div has class 'chat-item right-box'
+    last_child = main_div.find_elements(By.XPATH, "./*")[-1]
+    if last_child in chat_items:
+        return True
+    else:
+        return False
+
+
+def have_new_message(driver):
+    with open('cust_names.json', 'r') as file:
+        old_names = json.load(file)
+
+    # Find all the <span> elements with class "name line1"
+    name_elements = driver.find_elements(By.CSS_SELECTOR, "span.name.line1")
+    new_names = [name_element.text for name_element in name_elements][:10]
+
+    with open('cust_names.json', 'w') as file:
+        json.dump(new_names, file)
+
+    # Compare if arrangement of both lists is same
+    isListSame = is_list_same(new_names, old_names)
+    isLastChatKefu = is_last_chat_item_right_box(driver)
+
+    if not isListSame or not isLastChatKefu:
+        return True
+    return False
+
+
+async def telegram_send_notification():
+    current_time = datetime.now().strftime('%H:%M')
+    try:
+        caption = f"{current_time} : YOU HAVE NEW CUSTOMER ! ! ! ! !"
+        async with client:
+            await client.send_message(CHANNEL_ID, caption)
+    except Exception as e:
+        print(e)
+
+    print('Sent: ' + caption)
+
+
+async def main():
     while True:
         current_time = datetime.now().strftime('%H:%M')
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
@@ -52,7 +109,7 @@ def open_browser_at_scheduled_time():
                 time.sleep(1)
 
                 # Minimize the browser window
-                driver.minimize_window()
+                driver.maximize_window()
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
@@ -64,7 +121,11 @@ def open_browser_at_scheduled_time():
                     except:
                         pass
 
-                    time.sleep(120)
+                    haveNewMessage = have_new_message(driver)
+                    if haveNewMessage:
+                        await telegram_send_notification()
+
+                    time.sleep(240)
 
                 # Close the browser when it's time to close
                 driver.find_element(By.XPATH, "//div[@class='status-box']").click()
@@ -84,6 +145,5 @@ def open_browser_at_scheduled_time():
             # Sleep for a while before checking the time again
             time.sleep(60)
 
-
-# Run the function
-open_browser_at_scheduled_time()
+if __name__ == "__main__":
+    asyncio.run(main())
