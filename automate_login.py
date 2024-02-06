@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 import json
 import asyncio
+import os
 
 # Use your own values from my.telegram.org
 api_id = 24923597
@@ -52,8 +53,11 @@ def is_last_chat_item_right_box(driver):
 
 
 def have_new_message(driver):
-    with open('cust_names.json', 'r') as file:
-        old_names = json.load(file)
+    if os.path.exists('cust_names.json'):
+        with open('cust_names.json', 'r') as file:
+            old_names = json.load(file)
+    else:
+        old_names = []
 
     # Find all the <span> elements with class "name line1"
     name_elements = driver.find_elements(By.CSS_SELECTOR, "span.name.line1")
