@@ -2,6 +2,8 @@ from langdetect import detect
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 from tqdm import tqdm
 
@@ -19,8 +21,10 @@ categories = {
 
 def select_category(title, desc):
     try:
-        if any(keyword in title or keyword in desc for keyword in ['学', '校', '教']):
+        if any(keyword in title or keyword in desc for keyword in ['学', '校', '教', '师']):
             return categories['校园漫画']
+        elif any(keyword in title or keyword in desc for keyword in ['cosplay']):
+            return categories['真人漫画']
         elif any(keyword in title or keyword in desc for keyword in ['女']):
             return categories['少女漫画']
         elif any(keyword in title or keyword in desc for keyword in ['爱']):
@@ -67,30 +71,52 @@ try:
 
     driver.find_element(By.XPATH, "//a[@class='layui-laypage-last']").click()
 
-    for iteration in tqdm(range(100), desc="Processing", unit="iteration"):
-        first_row = driver.find_element(By.XPATH, "//tbody/tr[1]")
-        first_row.find_element(By.XPATH, "//button[contains(@onclick, 'set_edit')]").click()
+    for page in tqdm(range(5), desc="Updating Page", unit="page"):
+        if page != 0:
+            driver.find_element(By.XPATH, "//a[@class='layui-laypage-prev']").click()
+            time.sleep(2)
+            driver.find_element(By.XPATH, "//a[@class='layui-laypage-next']").click()
+            time.sleep(2)
 
-        iframe = driver.find_element(By.ID, "layui-layer-iframe1")
-        driver.switch_to.frame(iframe)
+            driver.switch_to.default_content()
+            iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
+            driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
 
-        title_value = driver.find_element(By.NAME, "title").get_attribute("value") or ''
-        desc_value = driver.find_element(By.ID, "desc").get_attribute("value") or ''
+        # Get the total count from the span element
+        total_count = int(''.join(filter(str.isdigit, driver.find_element(By.CLASS_NAME, "layui-laypage-count").text)))
+        # Extract the last two digits using modulo operator
+        last_two_digits = total_count % 100
+        if last_two_digits == 0:
+            last_two_digits = 100
 
-        category_index = select_category(title=title_value, desc=desc_value)
+        for page in tqdm(range(last_two_digits), desc="Updating Comics", unit="comic"):
+            first_row = driver.find_element(By.XPATH, "//tbody/tr[1]")
+            first_row.find_element(By.XPATH, "//button[contains(@onclick, 'set_edit')]").click()
 
-        driver.find_element(By.XPATH, "//input[@placeholder='选择题材']").click()
-        time.sleep(1)
-        driver.find_element(By.XPATH, f"//dd[@lay-value='{category_index}']").click()
+            time.sleep(1)
+            iframe = driver.find_element(By.ID, "layui-layer-iframe1")
+            driver.switch_to.frame(iframe)
 
-        driver.find_element(By.XPATH, "//div[text()='正常']").click()
-        driver.find_element(By.CSS_SELECTOR, "div.layui-input-block button").click()
+            title_value = driver.find_element(By.NAME, "title").get_attribute("value") or ''
+            desc_value = driver.find_element(By.ID, "desc").get_attribute("value") or ''
 
-        time.sleep(2)
+            category_index = select_category(title=title_value, desc=desc_value)
 
-        driver.switch_to.default_content()
-        iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
-        driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
+            driver.find_element(By.XPATH, "//input[@placeholder='选择题材']").click()
+            # time.sleep(3)
+            # driver.find_element(By.XPATH, f"//dd[@lay-value='{category_index}']").click()
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//dd[@lay-value='{category_index}']"))).click()
+
+            driver.find_element(By.XPATH, "//div[text()='正常']").click()
+            driver.find_element(By.CSS_SELECTOR, "div.layui-input-block button").click()
+
+            time.sleep(2)
+
+            driver.switch_to.default_content()
+            iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
+            driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
+            time.sleep(1)
 
 finally:
+    print("--------------------DONE AND DUSTED--------------------")
     driver.quit()

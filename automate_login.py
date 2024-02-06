@@ -1,18 +1,20 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 import time
 from datetime import datetime
 
 scheduled_times = {
     'Monday': ['15:00', '21:00'],
-    'Tuesday': ['18:00', '11:59'],
+    'Tuesday': ['18:00', '23:58'],
     'Wednesday': ['15:00', '21:00'],
     'Thursday': ['15:00', '21:00'],
     'Friday': ['15:00', '21:00'],
-    'Saturday': ['09:00', '16:00'],
-    'Sunday': ['15:00', '21:00']
+    'Saturday': ['09:00', '18:00'],
+    # 'Sunday': ['15:00', '21:00']
 }
 
 
@@ -46,12 +48,15 @@ def open_browser_at_scheduled_time():
                 password_input.send_keys('qweqwe')
 
                 # Click the login button
-                login_button = driver.find_element(By.XPATH, '//button[contains(@class, "ivu-btn-primary")]')
-                login_button.click()
+                driver.find_element(By.XPATH, '//button[contains(@class, "ivu-btn-primary")]').click()
+                time.sleep(1)
+
+                # Minimize the browser window
+                driver.minimize_window()
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
-                    time.sleep(120)
+                    driver.refresh()
 
                     # Accept any alert or confirmation popup
                     try:
@@ -59,9 +64,17 @@ def open_browser_at_scheduled_time():
                     except:
                         pass
 
-                    driver.refresh()
+                    time.sleep(120)
 
                 # Close the browser when it's time to close
+                driver.find_element(By.XPATH, "//div[@class='status-box']").click()
+                driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='离线']").click()
+                time.sleep(2)
+                driver.find_element(By.XPATH, "//div[@class='status-box']").click()
+                driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='退出登录']").click()
+                time.sleep(2)
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='ivu-btn ivu-btn-primary ivu-btn-large']/span[text()='确定']"))).click()
+                time.sleep(3)
                 driver.quit()
             else:
                 # Sleep for a while before checking the time again
