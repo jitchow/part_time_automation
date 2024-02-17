@@ -14,8 +14,10 @@ import os
 # Use your own values from my.telegram.org
 api_id = 24923597
 api_hash = "7a04f08385f68ff36841b0c65b83be86"
-CHANNEL_ID = -4038638534  # -4041523708 kefu -4038638534 test
 client = TelegramClient('session', api_id, api_hash)
+
+CHANNEL_ID = -4038638534  # -4041523708 kefu -4038638534 test
+CUST_LIST_JSON = 'cust_names.json'
 
 scheduled_times = {
     'Monday': ['15:00', '21:00'],
@@ -23,7 +25,7 @@ scheduled_times = {
     'Wednesday': ['15:00', '21:00'],
     'Thursday': ['15:00', '21:00'],
     'Friday': ['15:00', '21:00'],
-    'Saturday': ['09:00', '18:00'],
+    'Saturday': ['15:00', '21:00'],
     # 'Sunday': ['15:00', '21:00']
 }
 
@@ -53,8 +55,8 @@ def is_last_chat_item_right_box(driver):
 
 
 def have_new_message(driver):
-    if os.path.exists('cust_names.json'):
-        with open('cust_names.json', 'r') as file:
+    if os.path.exists(CUST_LIST_JSON):
+        with open(CUST_LIST_JSON, 'r') as file:
             old_names = json.load(file)
     else:
         old_names = []
@@ -63,7 +65,7 @@ def have_new_message(driver):
     name_elements = driver.find_elements(By.CSS_SELECTOR, "span.name.line1")
     new_names = [name_element.text for name_element in name_elements][:10]
 
-    with open('cust_names.json', 'w') as file:
+    with open(CUST_LIST_JSON, 'w') as file:
         json.dump(new_names, file)
 
     # Compare if arrangement of both lists is same
@@ -76,9 +78,9 @@ def have_new_message(driver):
 
 
 async def telegram_send_notification():
-    current_time = datetime.now().strftime('%H:%M')
+    current_time = datetime.now().strftime('%H:%M:%S')
     try:
-        caption = f"{current_time} : YOU HAVE NEW CUSTOMER ! ! ! ! !"
+        caption = f"{current_time}: ⚠️  YOU HAVE NEW CUSTOMER ! ! ! ⚠️"
         async with client:
             await client.send_message(CHANNEL_ID, caption)
     except Exception as e:
@@ -93,7 +95,10 @@ async def main():
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
         if current_day in scheduled_times:
-            open_time, close_time = scheduled_times[current_day]
+            if current_day == 'Wednesday' and current_time < '04:00':
+                open_time, close_time = ['00:00', '03:00']
+            else:
+                open_time, close_time = scheduled_times[current_day]
 
             if is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL

@@ -7,6 +7,9 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from tqdm import tqdm
 
+# from / back
+MODE = 'back'
+PAGES_TO_DO = 2
 
 categories = {
     '剧情韩漫': 1,
@@ -69,54 +72,62 @@ try:
     driver.find_element(By.XPATH, "//option[@value='100']").click()
     time.sleep(2)
 
-    driver.find_element(By.XPATH, "//a[@class='layui-laypage-last']").click()
+    if MODE == 'back':
+        driver.find_element(By.XPATH, "//a[@class='layui-laypage-last']").click()
 
-    for page in tqdm(range(5), desc="Updating Page", unit="page"):
-        if page != 0:
-            driver.find_element(By.XPATH, "//a[@class='layui-laypage-prev']").click()
-            time.sleep(2)
-            driver.find_element(By.XPATH, "//a[@class='layui-laypage-next']").click()
-            time.sleep(2)
+    for page in tqdm(range(PAGES_TO_DO), desc="Updating Page", unit="page"):
+        if MODE == 'back':
+            if page != 0:
+                driver.find_element(By.XPATH, "//a[@class='layui-laypage-prev']").click()
+                time.sleep(2)
+                driver.find_element(By.XPATH, "//a[@class='layui-laypage-next']").click()
+                time.sleep(2)
 
-            driver.switch_to.default_content()
-            iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
-            driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
+                driver.switch_to.default_content()
+                iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
+                driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
 
-        # Get the total count from the span element
-        total_count = int(''.join(filter(str.isdigit, driver.find_element(By.CLASS_NAME, "layui-laypage-count").text)))
-        # Extract the last two digits using modulo operator
-        last_two_digits = total_count % 100
-        if last_two_digits == 0:
+            # Get the total count from the span element
+            total_count = int(''.join(filter(str.isdigit, driver.find_element(By.CLASS_NAME, "layui-laypage-count").text)))
+            # Extract the last two digits using modulo operator
+            last_two_digits = total_count % 100
+            if last_two_digits == 0:
+                last_two_digits = 100
+
+        elif MODE == 'front':
             last_two_digits = 100
 
-        for page in tqdm(range(last_two_digits), desc="Updating Comics", unit="comic"):
-            first_row = driver.find_element(By.XPATH, "//tbody/tr[1]")
-            first_row.find_element(By.XPATH, "//button[contains(@onclick, 'set_edit')]").click()
+        for comic in tqdm(range(last_two_digits), desc="Updating Comics", unit="comic"):
+            try:
+                first_row = driver.find_element(By.XPATH, "//tbody/tr[1]")
+                first_row.find_element(By.XPATH, "//button[contains(@onclick, 'set_edit')]").click()
 
-            time.sleep(1)
-            iframe = driver.find_element(By.ID, "layui-layer-iframe1")
-            driver.switch_to.frame(iframe)
+                time.sleep(1)
+                iframe = driver.find_element(By.ID, "layui-layer-iframe1")
+                driver.switch_to.frame(iframe)
 
-            title_value = driver.find_element(By.NAME, "title").get_attribute("value") or ''
-            desc_value = driver.find_element(By.ID, "desc").get_attribute("value") or ''
+                title_value = driver.find_element(By.NAME, "title").get_attribute("value") or ''
+                desc_value = driver.find_element(By.ID, "desc").get_attribute("value") or ''
+                category_index = select_category(title=title_value, desc=desc_value)
 
-            category_index = select_category(title=title_value, desc=desc_value)
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@placeholder='选择题材']"))).click()
+                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, f"//dd[@lay-value='{category_index}']"))).click()
 
-            driver.find_element(By.XPATH, "//input[@placeholder='选择题材']").click()
-            # time.sleep(3)
-            # driver.find_element(By.XPATH, f"//dd[@lay-value='{category_index}']").click()
-            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//dd[@lay-value='{category_index}']"))).click()
+                driver.find_element(By.XPATH, "//div[text()='正常']").click()
+                driver.find_element(By.CSS_SELECTOR, "div.layui-input-block button").click()
 
-            driver.find_element(By.XPATH, "//div[text()='正常']").click()
-            driver.find_element(By.CSS_SELECTOR, "div.layui-input-block button").click()
+                time.sleep(2)
 
-            time.sleep(2)
-
-            driver.switch_to.default_content()
-            iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
-            driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
-            time.sleep(1)
+                driver.switch_to.default_content()
+                iframe_tab_id = "c92761fd166a5c85385340d8c1a3f456"
+                driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
+                time.sleep(1)
+            except Exception as e:
+                comic += 1
+                continue
 
 finally:
+    print()
     print("--------------------DONE AND DUSTED--------------------")
+    print()
     driver.quit()

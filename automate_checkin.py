@@ -38,6 +38,8 @@ def take_screenshot(url):
     driver = webdriver.Edge(service=service)
     driver.get(itdog_url)
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
     # Find the input element and submit button
     input_element = driver.find_element(By.ID, 'host')
     submit_button = driver.find_element(By.XPATH, '//button[@onclick="check_form(\'fast\')"]')
@@ -68,8 +70,10 @@ def take_screenshot(url):
     elif time_out_value >= 10:
         caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误。"
 
-    # Scroll down a specific amount (you can adjust the value as needed)
-    driver.execute_script(f"window.scrollBy(0, 580);")
+    # Find the element with class "mt-3" and style "display:flex;"
+    element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
+    # Scroll down to the element
+    driver.execute_script("arguments[0].scrollIntoView();", element)
     time.sleep(1)  # Add a delay for scrolling to complete
 
     # Make the page full screen
@@ -131,7 +135,7 @@ if __name__ == "__main__":
         'Wednesday' : time_ranges['3pmto9pm_wed'],
         'Thursday' : time_ranges['3pmto9pm'],
         'Friday' : time_ranges['3pmto9pm'],
-        'Saturday' : time_ranges['9amto6pm'],
+        'Saturday' : time_ranges['3pmto9pm'], # update this after 17/2/2024
         # 'Sunday' : time_ranges['9amto6pm'] # delete this after 5/2/2024
     }
 
