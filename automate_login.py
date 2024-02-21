@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.alert import Alert 
 from telethon import TelegramClient
 
 import time
@@ -122,14 +123,16 @@ async def main():
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
-                    driver.refresh()
-
-                    # Accept any alert or confirmation popup
                     try:
-                        driver.switch_to.alert.accept()
+                        driver.refresh()
+                        print('R e f r e s h e d  !')
+                        
+                        # Accept any alert or confirmation popup
+                        Alert(driver).accept()
                     except:
                         pass
-
+                    
+                    time.sleep(3)
                     haveNewMessage = have_new_message(driver)
                     if haveNewMessage:
                         await telegram_send_notification()

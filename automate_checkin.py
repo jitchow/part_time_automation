@@ -19,6 +19,7 @@ CHANNEL_ID = -4041523708  # -4041523708 kefu -4038638534 test
 initial_url = "https://www.ina72.com/"
 client = TelegramClient('session', api_id, api_hash)
 
+failure_counter = 0
 
 def get_final_url(initial_url):
     try:
@@ -66,9 +67,14 @@ def take_screenshot(url):
 
     # Check if the value is more or less than 10
     if time_out_value < 10:
+        failure_counter = 0
         caption = f"{final_url} 打卡 IP正常运行"
     elif time_out_value >= 10:
-        caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误。"
+        failure_counter += 1
+        if failure_counter > 1:
+            caption = f"{final_url} 等待维修"
+        else:
+            caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
 
     # Find the element with class "mt-3" and style "display:flex;"
     element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
