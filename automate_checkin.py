@@ -21,6 +21,23 @@ client = TelegramClient('session', api_id, api_hash)
 
 failure_counter = 0
 
+time_ranges = {
+    '9amto6pm' : ['09:00', '10:01', '11:05', '12:03', '13:02', '14:04', '15:05', '16:03', '17:02', '18:00'],
+    '3pmto9pm' : ['15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00'],
+    '6pmto11pm' : ['18:00', '19:03', '20:04', '21:01', '22:05', '23:02'],
+    '3pmto9pm_wed' : ['00:03', '01:05', '02:04', '03:00', '15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00'], 
+    '9amto6pm_wed' : ['00:03', '01:05', '02:04', '03:00', '09:00', '10:01', '11:05', '12:03', '13:02', '14:04', '15:05', '16:03', '17:02', '18:00'], 
+}
+
+scheduled_times = {
+    'Monday' : time_ranges['9amto6pm'],
+    'Tuesday' : time_ranges['6pmto11pm'],
+    'Wednesday' : time_ranges['9amto6pm_wed'],
+    'Thursday' : time_ranges['3pmto9pm'],
+    'Friday' : time_ranges['3pmto9pm'],
+    'Saturday' : time_ranges['9amto6pm'],
+}
+
 def get_final_url(initial_url):
     try:
         response = requests.head(initial_url, allow_redirects=True)
@@ -112,12 +129,6 @@ def run_async_task(task, loop):
     loop.run_until_complete(task)
 
 
-# def schedule_telegram_messages(times):
-#     loop = asyncio.get_event_loop()
-#     for t in times:
-#         task = send_telegram()
-#         schedule.every().day.at(t).do(run_async_task, task, loop)
-
 def schedule_telegram_messages(weekly_schedule):
     loop = asyncio.get_event_loop()
     for day, times in weekly_schedule.items():
@@ -126,27 +137,13 @@ def schedule_telegram_messages(weekly_schedule):
             getattr(schedule.every().day, day.lower()).at(t).do(run_async_task, task, loop)
 
 
-if __name__ == "__main__":
+while True:
+    try:
+        if __name__ == "__main__":
+            schedule_telegram_messages(scheduled_times)
 
-    time_ranges = {
-        '9amto6pm' : ['09:00', '10:01', '11:05', '12:03', '13:02', '14:04', '15:05', '16:03', '17:02', '18:00'],
-        '3pmto9pm' : ['15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00'],
-        '6pmto11pm' : ['18:00', '19:03', '20:04', '21:01', '22:05', '23:02'],
-        '3pmto9pm_wed' : ['00:03', '01:05', '02:04', '03:00', '15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00']
-    }
-
-    scheduled_times = {
-        'Monday' : time_ranges['3pmto9pm'],
-        'Tuesday' : time_ranges['6pmto11pm'],
-        'Wednesday' : time_ranges['3pmto9pm_wed'],
-        'Thursday' : time_ranges['3pmto9pm'],
-        'Friday' : time_ranges['3pmto9pm'],
-        'Saturday' : time_ranges['3pmto9pm'], # update this after 17/2/2024
-        # 'Sunday' : time_ranges['9amto6pm'] # delete this after 5/2/2024
-    }
-
-    schedule_telegram_messages(scheduled_times)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+            while True:
+                schedule.run_pending()
+                time.sleep(1)
+    except:
+        print('Check-in crashed, running')

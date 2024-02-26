@@ -21,13 +21,12 @@ CHANNEL_ID = -4038638534  # -4041523708 kefu -4038638534 test
 CUST_LIST_JSON = 'cust_names.json'
 
 scheduled_times = {
-    'Monday': ['15:00', '21:00'],
+    'Monday': ['09:00', '18:00'],
     'Tuesday': ['18:00', '23:58'],
-    'Wednesday': ['15:00', '21:00'],
+    'Wednesday': ['09:00', '18:00'],
     'Thursday': ['15:00', '21:00'],
     'Friday': ['15:00', '21:00'],
-    'Saturday': ['15:00', '21:00'],
-    # 'Sunday': ['15:00', '21:00']
+    'Saturday': ['09:00', '18:00'],
 }
 
 
@@ -78,10 +77,16 @@ def have_new_message(driver):
     return False
 
 
-async def telegram_send_notification():
+async def telegram_send_notification(type):
     current_time = datetime.now().strftime('%H:%M:%S')
+    messages = {
+        'notification' : f"{current_time}: ⚠️  YOU HAVE NEW CUSTOMER ! ! ! ⚠️", 
+        'online' : '客服 IS NOW ONLINE', 
+        'offline' : '客服 IS NOW OFFLINE'
+    }
+    caption = messages[type]
+
     try:
-        caption = f"{current_time}: ⚠️  YOU HAVE NEW CUSTOMER ! ! ! ⚠️"
         async with client:
             await client.send_message(CHANNEL_ID, caption)
     except Exception as e:
@@ -118,8 +123,9 @@ async def main():
                 driver.find_element(By.XPATH, '//button[contains(@class, "ivu-btn-primary")]').click()
                 time.sleep(1)
 
-                # Minimize the browser window
                 driver.maximize_window()
+
+                await telegram_send_notification('online')
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
@@ -135,7 +141,7 @@ async def main():
                     time.sleep(3)
                     haveNewMessage = have_new_message(driver)
                     if haveNewMessage:
-                        await telegram_send_notification()
+                        await telegram_send_notification('notification')
 
                     time.sleep(120)
 
@@ -143,12 +149,13 @@ async def main():
                 driver.find_element(By.XPATH, "//div[@class='status-box']").click()
                 driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='离线']").click()
                 time.sleep(2)
-                driver.find_element(By.XPATH, "//div[@class='status-box']").click()
-                driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='退出登录']").click()
-                time.sleep(2)
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='ivu-btn ivu-btn-primary ivu-btn-large']/span[text()='确定']"))).click()
-                time.sleep(3)
+                # driver.find_element(By.XPATH, "//div[@class='status-box']").click()
+                # driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='退出登录']").click()
+                # time.sleep(2)
+                # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='ivu-btn ivu-btn-primary ivu-btn-large']/span[text()='确定']"))).click()
+                # time.sleep(3)
                 driver.quit()
+                await telegram_send_notification('offline')
             else:
                 # Sleep for a while before checking the time again
                 time.sleep(60)
@@ -157,5 +164,9 @@ async def main():
             # Sleep for a while before checking the time again
             time.sleep(60)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+while True:
+    try:
+        if __name__ == "__main__":
+            asyncio.run(main())
+    except:
+        print('Login crashed, running again.....')

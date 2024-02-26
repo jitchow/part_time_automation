@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 # from / back
 MODE = 'back'
-PAGES_TO_DO = 2
+PAGES_TO_DO = 1
 
 categories = {
     '剧情韩漫': 1,
@@ -123,7 +123,7 @@ try:
                 driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, f"iframe[tab-id='{iframe_tab_id}']"))
                 time.sleep(1)
             except Exception as e:
-                comic += 1
+                comic -= 1
                 continue
 
 finally:
