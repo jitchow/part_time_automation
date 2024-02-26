@@ -146,4 +146,4 @@ while True:
                 schedule.run_pending()
                 time.sleep(1)
     except:
-        print('Check-in crashed, running')
+        print('Check-in crashed, running again.....')
