@@ -11,30 +11,20 @@ from selenium.webdriver.support import expected_conditions as EC
 
 import requests
 import time
+import os
+from config import scheduled_times_checkin, telegram_bot
+from dotenv import load_dotenv
+load_dotenv()
 
 # Use your own values from my.telegram.org
-api_id = 24923597
-api_hash = "7a04f08385f68ff36841b0c65b83be86"
-CHANNEL_ID = -4041523708  # -4041523708 kefu -4038638534 test
-initial_url = "https://www.ina72.com/"
-client = TelegramClient('session', api_id, api_hash)
+TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID'))
+TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
+TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
+TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
 
-time_ranges = {
-    '9amto6pm' : ['09:00', '10:01', '11:05', '12:03', '13:02', '14:04', '15:05', '16:03', '17:02', '18:00'],
-    '3pmto9pm' : ['15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00'],
-    '6pmto11pm' : ['18:00', '19:03', '20:04', '21:01', '22:05', '23:02'],
-    '3pmto9pm_wed' : ['00:03', '01:05', '02:04', '03:00', '15:00', '16:03', '17:05', '18:02', '19:04', '20:00', '21:00'], 
-    '9amto6pm_wed' : ['00:03', '01:05', '02:04', '03:00', '09:00', '10:01', '11:05', '12:03', '13:02', '14:04', '15:05', '16:03', '17:02', '18:00'], 
-}
+initial_url = "https://www.ina79.com/"
 
-scheduled_times = {
-    'Monday' : time_ranges['9amto6pm'],
-    'Tuesday' : time_ranges['6pmto11pm'],
-    'Wednesday' : time_ranges['9amto6pm_wed'],
-    'Thursday' : time_ranges['3pmto9pm'],
-    'Friday' : time_ranges['3pmto9pm'],
-    'Saturday' : time_ranges['9amto6pm'],
-}
+client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
 def get_final_url(initial_url):
     try:
@@ -49,8 +39,9 @@ def get_final_url(initial_url):
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
 def take_screenshot(url):
     caption = ""
-    itdog_url = "https://www.itdog.cn/http/"
-    service = Service(executable_path='msedgedriver.exe')
+    itdog_url = os.getenv('LINK_ITDOG')
+    
+    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     driver = webdriver.Edge(service=service)
     driver.get(itdog_url)
 
@@ -107,10 +98,10 @@ async def send_telegram():
     try:
         caption = take_screenshot(initial_url)
         async with client:
-            await client.send_file(CHANNEL_ID, 'screenshot.png', caption=caption)
+            await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
 
             if "错误" in caption:
-                await client.send_message(CHANNEL_ID, "@Huazai883")
+                await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Huazai883")
     except Exception as e:
         print(e)
 
@@ -133,12 +124,17 @@ def schedule_telegram_messages(weekly_schedule):
 while True:
     try:
         if __name__ == "__main__":
-            schedule_telegram_messages(scheduled_times)
+            schedule_telegram_messages(scheduled_times_checkin)
 
             while True:
                 schedule.run_pending()
                 time.sleep(1)
     except:
+        time.sleep(30)
+        asyncio.run(send_telegram())
+        time.sleep(60)
         # Cancel all tasks
         schedule.clear()
+        telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in crashed, running again.....')
         print('Check-in crashed, running again.....')
+

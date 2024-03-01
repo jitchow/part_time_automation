@@ -6,3 +6,5 @@ schedule
 telethon
 requests
 tqdm
+pyTelegramBotAPI
+python-dotenv

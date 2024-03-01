@@ -4,30 +4,19 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.alert import Alert 
-from telethon import TelegramClient
 
 import time
 from datetime import datetime
 import json
-import asyncio
 import os
+from dotenv import load_dotenv
+load_dotenv()
+from config import scheduled_times_login, telegram_bot
 
 # Use your own values from my.telegram.org
-api_id = 24923597
-api_hash = "7a04f08385f68ff36841b0c65b83be86"
-client = TelegramClient('session', api_id, api_hash)
-
-CHANNEL_ID = -4038638534  # -4041523708 kefu -4038638534 test
-CUST_LIST_JSON = 'cust_names.json'
-
-scheduled_times = {
-    'Monday': ['09:00', '18:00'],
-    'Tuesday': ['18:00', '23:58'],
-    'Wednesday': ['09:00', '18:00'],
-    'Thursday': ['15:00', '21:00'],
-    'Friday': ['15:00', '21:00'],
-    'Saturday': ['09:00', '18:00'],
-}
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
+CUST_LIST_JSON = os.getenv('CUST_LIST_JSON')
 
 
 def is_time_between(start_time, end_time, check_time=None):
@@ -77,47 +66,47 @@ def have_new_message(driver):
     return False
 
 
-async def telegram_send_notification(type):
+def telegram_send_notification(type):
     current_time = datetime.now().strftime('%H:%M:%S')
     messages = {
         'notification' : f"{current_time}: ⚠️  YOU HAVE NEW CUSTOMER ! ! ! ⚠️", 
         'online' : '客服 IS NOW ONLINE', 
-        'offline' : '客服 IS NOW OFFLINE'
+        'offline' : '客服 IS NOW OFFLINE',
+        'crashed' : 'Login crashed, running again.....'
     }
     caption = messages[type]
 
     try:
-        async with client:
-            await client.send_message(CHANNEL_ID, caption)
+        telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, caption)
     except Exception as e:
         print(e)
 
     print('Sent: ' + caption)
 
 
-async def main():
+def main():
     while True:
         current_time = datetime.now().strftime('%H:%M')
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
-        if current_day in scheduled_times:
+        if current_day in scheduled_times_login:
             if current_day == 'Wednesday' and current_time < '04:00':
                 open_time, close_time = ['00:00', '03:00']
             else:
-                open_time, close_time = scheduled_times[current_day]
-
+                open_time, close_time = scheduled_times_login[current_day]
+            open_time, close_time = ['01:00', '23:00']
             if is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
-                service = Service(executable_path='msedgedriver.exe')
+                service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
                 driver = webdriver.Edge(service=service)
-                driver.get("https://imh.99b1b438eb1b4006.pw/kefu/pc_list")
+                driver.get(os.getenv('LINK_LOGIN'))
 
                 # Fill in the username and password fields
                 username_input = driver.find_element(By.CLASS_NAME, 'ivu-input-large')
                 password_input = driver.find_element(By.XPATH, '//input[@type="password"]')
 
-                username_input.send_keys('xiaoyu')
-                password_input.send_keys('qweqwe')
+                username_input.send_keys(os.getenv('USERNAME_KEFU'))
+                password_input.send_keys(os.getenv('PASSWORD_KEFU'))
 
                 # Click the login button
                 driver.find_element(By.XPATH, '//button[contains(@class, "ivu-btn-primary")]').click()
@@ -125,14 +114,20 @@ async def main():
 
                 driver.maximize_window()
 
-                await telegram_send_notification('online')
+                telegram_send_notification('online')
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
                     try:
-                        driver.refresh()
+                        WebDriverWait(driver, 10).until(lambda driver: driver.execute_script("return document.readyState") == "complete")
+                        driver.execute_script("window.location.reload(true);")
                         print('R e f r e s h e d  !')
-                        
+                    except Exception as e:
+                        print(e)
+                        driver.quit()
+                        raise Exception
+                    
+                    try:  
                         # Accept any alert or confirmation popup
                         Alert(driver).accept()
                     except:
@@ -141,7 +136,7 @@ async def main():
                     time.sleep(3)
                     haveNewMessage = have_new_message(driver)
                     if haveNewMessage:
-                        await telegram_send_notification('notification')
+                        telegram_send_notification('notification')
 
                     time.sleep(120)
 
@@ -149,13 +144,9 @@ async def main():
                 driver.find_element(By.XPATH, "//div[@class='status-box']").click()
                 driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='离线']").click()
                 time.sleep(2)
-                # driver.find_element(By.XPATH, "//div[@class='status-box']").click()
-                # driver.find_element(By.XPATH, "//div[@class='online-down']//div[@class='item'][text()='退出登录']").click()
-                # time.sleep(2)
-                # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='ivu-btn ivu-btn-primary ivu-btn-large']/span[text()='确定']"))).click()
-                # time.sleep(3)
+
                 driver.quit()
-                await telegram_send_notification('offline')
+                telegram_send_notification('offline')
             else:
                 # Sleep for a while before checking the time again
                 time.sleep(60)
@@ -167,6 +158,7 @@ async def main():
 while True:
     try:
         if __name__ == "__main__":
-            asyncio.run(main())
+            main()
     except:
+        telegram_send_notification('crashed')
         print('Login crashed, running again.....')
