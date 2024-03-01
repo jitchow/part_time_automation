@@ -94,7 +94,7 @@ def main():
                 open_time, close_time = ['00:00', '03:00']
             else:
                 open_time, close_time = scheduled_times_login[current_day]
-            open_time, close_time = ['01:00', '23:00']
+            
             if is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
                 service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
