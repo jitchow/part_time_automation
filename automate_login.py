@@ -159,6 +159,8 @@ while True:
     try:
         if __name__ == "__main__":
             main()
+    except KeyboardInterrupt:
+        break
     except:
         telegram_send_notification('crashed')
         print('Login crashed, running again.....')

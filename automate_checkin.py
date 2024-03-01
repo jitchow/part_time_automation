@@ -129,6 +129,8 @@ while True:
             while True:
                 schedule.run_pending()
                 time.sleep(1)
+    except KeyboardInterrupt:
+        break
     except:
         time.sleep(30)
         asyncio.run(send_telegram())
