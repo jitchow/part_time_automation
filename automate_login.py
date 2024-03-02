@@ -118,9 +118,9 @@ def main():
 
                 # Refresh the page every 2 minutes
                 while is_time_between(open_time, close_time):
-                    try:
-                        driver.execute_script("window.location.reload(true);")
+                    try: 
                         WebDriverWait(driver, 10).until(lambda driver: driver.execute_script("return document.readyState") == "complete")
+                        driver.execute_script("window.location.reload(true);") 
                         print('R e f r e s h e d  !')
                     except Exception as e:
                         print(e)
