@@ -8,7 +8,7 @@ telegram_bot = telebot.TeleBot(os.getenv('TELEGRAM_BOT_TOKEN'))
 
 # Back-End
 MODE = 'back' # front / back
-PAGES_TO_DO = 3
+PAGES_TO_DO = 6
 
 # Check In 
 time_ranges_checkin = {
@@ -20,9 +20,9 @@ time_ranges_checkin = {
 }
 
 scheduled_times_checkin = {
-    'Monday' : time_ranges_checkin['9amto6pm'],
+    'Monday' : time_ranges_checkin['3pmto9pm'],
     'Tuesday' : time_ranges_checkin['6pmto11pm'],
-    'Wednesday' : time_ranges_checkin['9amto6pm_wed'],
+    'Wednesday' : time_ranges_checkin['3pmto9pm_wed'],
     'Thursday' : time_ranges_checkin['3pmto9pm'],
     'Friday' : time_ranges_checkin['3pmto9pm'],
     'Saturday' : time_ranges_checkin['9amto6pm'],
@@ -30,9 +30,9 @@ scheduled_times_checkin = {
 
 # Login
 scheduled_times_login = {
-    'Monday': ['09:00', '18:00'],
+    'Monday': ['15:00', '21:00'],
     'Tuesday': ['18:00', '23:58'],
-    'Wednesday': ['09:00', '18:00'],
+    'Wednesday': ['15:00', '21:00'],
     'Thursday': ['15:00', '21:00'],
     'Friday': ['15:00', '21:00'],
     'Saturday': ['09:00', '18:00'],
