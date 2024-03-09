@@ -27,13 +27,10 @@ initial_url = "https://www.ina79.com/"
 client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
 def get_final_url(initial_url):
-    try:
-        response = requests.head(initial_url, allow_redirects=True)
-        final_url = response.url
-        return final_url
-    except requests.RequestException as e:
-        print(f"Error: {e}")
-        return None
+    response = requests.head(initial_url, allow_redirects=True)
+    final_url = response.url
+    return final_url
+
 
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
@@ -95,15 +92,13 @@ def take_screenshot(url):
 
 
 async def send_telegram():
-    try:
-        caption = take_screenshot(initial_url)
-        async with client:
-            await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
+    caption = ''
+    caption = take_screenshot(initial_url)
+    async with client:
+        await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
 
-            if "错误" in caption:
-                await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Huazai883")
-    except Exception as e:
-        print(e)
+        if "错误" in caption:
+            await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Huazai883")
 
     print('Sent: ' + caption)
 
