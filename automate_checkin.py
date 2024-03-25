@@ -22,16 +22,15 @@ TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
 TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
 TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
 
-initial_url = "https://www.ina79.com/"
+initial_url = "https://www.ina98.com/"
 
 client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
+failure_count = 0
 
 def get_final_url(initial_url):
     response = requests.head(initial_url, allow_redirects=True)
     final_url = response.url
     return final_url
-
-
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
 def take_screenshot(url):
@@ -68,11 +67,17 @@ def take_screenshot(url):
     # Get the value of the "time_out" span and convert it to an integer
     time_out_value = int(time_out_span.text)
 
+    global failure_count
     # Check if the value is more or less than 10
     if time_out_value < 10:
+        failure_count = 0
         caption = f"{final_url} 打卡 IP正常运行"
     elif time_out_value >= 10:
-        caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
+        failure_count += 1
+        if failure_count <= 1:
+            caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
+        else:
+            caption = f"{final_url} 等待修复"
 
     # Find the element with class "mt-3" and style "display:flex;"
     element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
@@ -94,11 +99,13 @@ def take_screenshot(url):
 async def send_telegram():
     caption = ''
     caption = take_screenshot(initial_url)
+
     async with client:
         await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
 
-        if "错误" in caption:
-            await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Huazai883")
+        if failure_count <= 1:
+            if "错误" in caption:
+                await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Huazai883")
 
     print('Sent: ' + caption)
 
@@ -134,4 +141,3 @@ while True:
         schedule.clear()
         telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in crashed, running again.....')
         print('Check-in crashed, running again.....')
-
