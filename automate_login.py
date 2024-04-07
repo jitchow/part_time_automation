@@ -11,7 +11,7 @@ import json
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from config import scheduled_times_login, telegram_bot
+from config import scheduled_times_login, telegram_bot, login_days_midnight
 
 # Use your own values from my.telegram.org
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -90,7 +90,7 @@ def main():
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
         if current_day in scheduled_times_login:
-            if current_day == 'Wednesday' and current_time < '04:00':
+            if (current_day in login_days_midnight) and (current_time < '04:00'):
                 open_time, close_time = ['00:00', '03:00']
             else:
                 open_time, close_time = scheduled_times_login[current_day]

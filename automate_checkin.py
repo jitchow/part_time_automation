@@ -123,21 +123,15 @@ def schedule_telegram_messages(weekly_schedule):
             getattr(schedule.every().day, day.lower()).at(t).do(run_async_task, task, loop)
 
 
-while True:
-    try:
-        if __name__ == "__main__":
-            schedule_telegram_messages(scheduled_times_checkin)
+try:
+    if __name__ == "__main__":
+        schedule_telegram_messages(scheduled_times_checkin)
 
-            while True:
-                schedule.run_pending()
-                time.sleep(1)
-    except KeyboardInterrupt:
-        break
-    except:
-        time.sleep(30)
-        asyncio.run(send_telegram())
-        time.sleep(60)
-        # Cancel all tasks
-        schedule.clear()
-        telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in crashed, running again.....')
-        print('Check-in crashed, running again.....')
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+except:
+    # Cancel all tasks
+    schedule.clear()
+    telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in crashed.....')
+    print('Check-in crashed.....')
