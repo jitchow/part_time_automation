@@ -77,7 +77,7 @@ def take_screenshot(url):
         if failure_count <= 1:
             caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
         else:
-            caption = f"{final_url} 等待修复"
+            caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
 
     # Find the element with class "mt-3" and style "display:flex;"
     element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
