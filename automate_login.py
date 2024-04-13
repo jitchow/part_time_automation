@@ -90,12 +90,13 @@ def main():
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
         if current_day in scheduled_times_login or current_day in login_days_midnight:
-            if (current_day in login_days_midnight) and (current_time < '04:00'):
+            open_time, close_time = [None, None]
+            if (current_day in login_days_midnight) and (current_time < '03:05'):
                 open_time, close_time = ['00:00', '03:00']
-            else:
+            elif current_day in scheduled_times_login:
                 open_time, close_time = scheduled_times_login[current_day]
-            
-            if is_time_between(open_time, close_time, current_time):
+                
+            if open_time is not None and close_time is not None and is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
                 service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
                 driver = webdriver.Edge(service=service)
