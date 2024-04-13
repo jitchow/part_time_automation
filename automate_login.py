@@ -89,7 +89,7 @@ def main():
         current_time = datetime.now().strftime('%H:%M')
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
-        if current_day in scheduled_times_login:
+        if current_day in scheduled_times_login or current_day in login_days_midnight:
             if (current_day in login_days_midnight) and (current_time < '04:00'):
                 open_time, close_time = ['00:00', '03:00']
             else:
