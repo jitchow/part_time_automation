@@ -109,29 +109,4 @@ async def send_telegram():
 
     print('Sent: ' + caption)
 
-
-def run_async_task(task, loop):
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(task)
-
-
-def schedule_telegram_messages(weekly_schedule):
-    loop = asyncio.get_event_loop()
-    for day, times in weekly_schedule.items():
-        for t in times:
-            task = send_telegram()
-            getattr(schedule.every().day, day.lower()).at(t).do(run_async_task, task, loop)
-
-
-try:
-    if __name__ == "__main__":
-        schedule_telegram_messages(scheduled_times_checkin)
-
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
-except:
-    # Cancel all tasks
-    schedule.clear()
-    telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in crashed.....')
-    print('Check-in crashed.....')
+asyncio.run(send_telegram())
