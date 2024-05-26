@@ -22,7 +22,7 @@ TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
 TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
 TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
 
-initial_url = "https://www.ina98.com/"
+initial_url = "https://www.inb619.com/"
 
 client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 failure_count = 0
@@ -30,7 +30,31 @@ failure_count = 0
 def get_final_url(initial_url):
     response = requests.head(initial_url, allow_redirects=True)
     final_url = response.url
-    return final_url
+
+    recommendation_url = final_url + 'recommendation'
+
+    # Initialize the WebDriver for Microsoft Edge
+    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
+    options = webdriver.EdgeOptions()
+    options.add_argument('--headless')  # Run in headless mode (without opening a browser window)
+    driver = webdriver.Edge(service=service, options=options)
+
+    try:
+        # Open the webpage
+        driver.get(recommendation_url)
+        
+        # Wait for the element to be present
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//div[text()='禁漫']/parent::a"))
+        )
+
+        # Get the link from the 'href' attribute of the parent 'a' tag
+        final_url = element.get_attribute('href')
+        return final_url
+
+    finally:
+        driver.quit()
+
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
 def take_screenshot(url):
