@@ -24,7 +24,7 @@ scheduled_times_checkin = {
     'Wednesday' : time_ranges_checkin['midnight'] + time_ranges_checkin['3pmto9pm'],
     'Thursday' : time_ranges_checkin['3pmto9pm'],
     'Friday' : time_ranges_checkin['3pmto9pm'],
-    'Sunday' : time_ranges_checkin['9amto6pm'],
+    'Saturday' : time_ranges_checkin['9amto6pm'],
 }
 
 # Login
@@ -36,5 +36,5 @@ scheduled_times_login = {
     'Wednesday': ['15:00', '21:00'],
     'Thursday': ['15:00', '21:00'],
     'Friday': ['15:00', '21:00'],
-    'Sunday': ['09:00', '18:00'],
+    'Saturday': ['09:00', '18:00'],
 }
