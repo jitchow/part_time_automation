@@ -14,6 +14,7 @@ import time
 import os
 from config import scheduled_times_checkin, telegram_bot
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -27,8 +28,17 @@ initial_url = "https://www.inb619.com/"
 
 client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 failure_count = 0
+last_checked_day = datetime.now().day
+
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # in seconds
+
+def reset_failure_count_if_new_day():
+    global failure_count, last_checked_day
+    current_day = datetime.now().day
+    if current_day != last_checked_day:
+        failure_count = 0
+        last_checked_day = current_day
 
 def get_final_url(initial_url):
     response = requests.head(initial_url, allow_redirects=True)
@@ -61,6 +71,8 @@ def get_final_url(initial_url):
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
 def take_screenshot(url):
+    reset_failure_count_if_new_day()  # Check if we need to reset the failure count
+
     caption = ""
     itdog_url = os.getenv('LINK_ITDOG')
     
@@ -161,6 +173,5 @@ if __name__ == "__main__":
             schedule.run_pending()
             time.sleep(1)
     except Exception as e:
-        schedule.clear()
         telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, f'Check-in crashed: {e}')
         print(f'Check-in crashed: {e}')
