@@ -76,7 +76,7 @@ def take_screenshot(url):
     reset_failure_count_if_new_day()  # Check if we need to reset the failure count
 
     caption = ""
-    itdog_url = os.getenv('LINK_ITDOG')
+    itdog_url = os.getenv('LINK_ALIYUN')
     
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     driver = webdriver.Edge(service=service)
@@ -84,27 +84,36 @@ def take_screenshot(url):
 
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
-    # Find the input element and submit button
-    input_element = driver.find_element(By.ID, 'host')
-    submit_button = driver.find_element(By.XPATH, '//button[@onclick="check_form(\'fast\')"]')
+    # Wait for the page to load and click the first span element
+    wait = WebDriverWait(driver, 10)
+    filter_selection_span = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-select next-select-trigger next-select-single next-medium input-select next-inactive next-no-search']")))
+    filter_selection_span.click()
+
+    # Click the checkbox
+    checkbox_label = wait.until(EC.element_to_be_clickable((By.XPATH, "//label[@class='next-checkbox-wrapper checked']")))
+    checkbox_label.click()
+
+    # Click the checkbox label "China Mobile"
+    chinamobile_label = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-checkbox-label' and contains(text(), 'China Mobile')]")))
+    chinamobile_label.click()
+
+    # Click the "Confirm" button
+    confirm_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-btn-helper' and contains(text(), 'Confirm')]")))
+    confirm_button.click()
 
     final_url = get_final_url(url)
-    # Add text to the input element
-    input_element.send_keys(final_url)  # Replace 'example.com' with the desired text
+    # Input the URL into the text field
+    url_input = wait.until(EC.presence_of_element_located((By.ID, "url1")))
+    url_input.send_keys(final_url)
 
-    # Click the submit button
-    submit_button.click()
-    time.sleep(10)
+    # Click the "OK" button
+    ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='next-btn next-large next-btn-primary pramary-button' and @data-spm-click='gostr=/aliyun;locaid=search']")))
+    ok_button.click()
 
-    china_mobile_span = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, '//span[@class="custom-control-label2" and text()=" 中国移动"]'))
-    )
-    # Click the "中国移动" span element
-    china_mobile_span.click()
-    time.sleep(5)  # Add a delay if needed
+    time.sleep(15)
 
     # Find the "time_out" span element
-    time_out_span = driver.find_element(By.XPATH, '//span[@class="time_out badge badge-danger small"]')
+    time_out_span = driver.find_element(By.XPATH, "//div[@class='next-col next-col-5']//span[@class='label' and text()='Parsing Result IP']/following-sibling::span")
     # Get the value of the "time_out" span and convert it to an integer
     time_out_value = int(time_out_span.text)
 
@@ -120,10 +129,9 @@ def take_screenshot(url):
         else:
             caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
 
-    # Find the element with class "mt-3" and style "display:flex;"
-    element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
-    # Scroll down to the element
-    driver.execute_script("arguments[0].scrollIntoView();", element)
+    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
+    # Scroll the element into view using JavaScript
+    driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
     time.sleep(1)  # Add a delay for scrolling to complete
 
     # Make the page full screen
