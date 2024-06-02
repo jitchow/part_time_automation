@@ -86,20 +86,6 @@ def take_screenshot(url):
 
     # Wait for the page to load and click the first span element
     wait = WebDriverWait(driver, 10)
-    filter_selection_span = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-select next-select-trigger next-select-single next-medium input-select next-inactive next-no-search']")))
-    filter_selection_span.click()
-
-    # Click the checkbox
-    checkbox_label = wait.until(EC.element_to_be_clickable((By.XPATH, "//label[@class='next-checkbox-wrapper checked']")))
-    checkbox_label.click()
-
-    # Click the checkbox label "China Mobile"
-    chinamobile_label = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-checkbox-label' and contains(text(), 'China Mobile')]")))
-    chinamobile_label.click()
-
-    # Click the "Confirm" button
-    confirm_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next-btn-helper' and contains(text(), 'Confirm')]")))
-    confirm_button.click()
 
     final_url = get_final_url(url)
     # Input the URL into the text field
@@ -110,7 +96,20 @@ def take_screenshot(url):
     ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='next-btn next-large next-btn-primary pramary-button' and @data-spm-click='gostr=/aliyun;locaid=search']")))
     ok_button.click()
 
-    time.sleep(15)
+    time.sleep(20)
+
+    # Click on the label with the text "Operator"
+    operator_label = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//label[text()='Operator']"))
+    )
+    operator_label.click()
+
+    # Wait for the dropdown options to be available and select the "China-Mobile" option
+    china_mobile_option = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//li[@role='option' and @title='China-Mobile']"))
+    )
+    china_mobile_option.click()
+    time.sleep(2)
 
     # Find the "time_out" span element
     time_out_span = driver.find_element(By.XPATH, "//div[@class='next-col next-col-5']//span[@class='label' and text()='Parsing Result IP']/following-sibling::span")
@@ -132,7 +131,7 @@ def take_screenshot(url):
     detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
     # Scroll the element into view using JavaScript
     driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
-    time.sleep(1)  # Add a delay for scrolling to complete
+    time.sleep(2)  # Add a delay for scrolling to complete
 
     # Make the page full screen
     driver.maximize_window()
