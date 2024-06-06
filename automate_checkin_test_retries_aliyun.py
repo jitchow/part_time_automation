@@ -106,13 +106,14 @@ def take_screenshot(url):
         EC.element_to_be_clickable((By.XPATH, "//li[@role='option' and @title='China-Mobile']"))
     )
     china_mobile_option.click()
-    time.sleep(2)
+    time.sleep(5)
 
     # Click on the "status" element
     status_icon = wait.until(
         EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
     )
     status_icon.click()
+    time.sleep(2)
 
     # Find number of http status 611
     status_611_elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '611')]")
