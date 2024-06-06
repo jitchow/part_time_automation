@@ -24,7 +24,7 @@ TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
 TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
 TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
 
-initial_url = "https://www.inb619.com/"
+initial_url = "https://jm18.me/"
 
 client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 failure_count = 0
@@ -43,10 +43,7 @@ def reset_failure_count_if_new_day():
         last_checked_day = current_day
 
 def get_final_url(initial_url):
-    response = requests.head(initial_url, allow_redirects=True)
-    final_url = response.url
-
-    recommendation_url = final_url + 'recommendation'
+    recommendation_url = initial_url + 'recommendation'
 
     # Initialize the WebDriver for Microsoft Edge
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
@@ -110,6 +107,12 @@ def take_screenshot(url):
     )
     china_mobile_option.click()
     time.sleep(2)
+
+    # Click on the "status" element
+    status_icon = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
+    )
+    status_icon.click()
 
     # Find the "time_out" span element
     time_out_span = driver.find_element(By.XPATH, "//div[@class='next-col next-col-5']//span[@class='label' and text()='Parsing Result IP']/following-sibling::span")
