@@ -114,10 +114,9 @@ def take_screenshot(url):
     )
     status_icon.click()
 
-    # Find the "time_out" span element
-    time_out_span = driver.find_element(By.XPATH, "//div[@class='next-col next-col-5']//span[@class='label' and text()='Parsing Result IP']/following-sibling::span")
-    # Get the value of the "time_out" span and convert it to an integer
-    time_out_value = int(time_out_span.text)
+    # Find number of http status 611
+    status_611_elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '611')]")
+    time_out_value = len(status_611_elements)
 
     global failure_count
     # Check if the value is more or less than 10
