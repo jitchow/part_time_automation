@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.alert import Alert 
+from selenium.webdriver.edge.options import Options
 
 import time
 from datetime import datetime
@@ -61,7 +62,9 @@ def have_new_message(driver):
     isListSame = is_list_same(new_names, old_names)
     isLastChatKefu = is_last_chat_item_right_box(driver)
 
-    if not isListSame or not isLastChatKefu:
+    # if not isListSame or not isLastChatKefu:
+    #     return True
+    if not isLastChatKefu:
         return True
     return False
 
@@ -99,7 +102,10 @@ def main():
             if open_time is not None and close_time is not None and is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
                 service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
-                driver = webdriver.Edge(service=service)
+                edge_options = Options()
+                edge_options.add_argument('--disable-cloud-management')
+                edge_options.add_argument('--disable-extensions')
+                driver = webdriver.Edge(service=service, options=edge_options)
                 driver.get(os.getenv('LINK_LOGIN'))
 
                 # Fill in the username and password fields
@@ -162,6 +168,7 @@ while True:
             main()
     except KeyboardInterrupt:
         break
-    except:
+    except Exception as e:
+        print(e)
         telegram_send_notification('crashed')
         print('Login crashed, running again.....')

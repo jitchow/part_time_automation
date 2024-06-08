@@ -8,6 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.edge.options import Options
 
 import requests
 import time
@@ -76,7 +77,10 @@ def take_screenshot(url):
     itdog_url = os.getenv('LINK_ALIYUN')
     
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
-    driver = webdriver.Edge(service=service)
+    edge_options = Options()
+    edge_options.add_argument('--disable-cloud-management')
+    edge_options.add_argument('--disable-extensions')
+    driver = webdriver.Edge(service=service, options=edge_options)
     driver.get(itdog_url)
 
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
@@ -115,9 +119,13 @@ def take_screenshot(url):
     status_icon.click()
     time.sleep(2)
 
-    # Find number of http status 611
-    status_611_elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '611')]")
-    time_out_value = len(status_611_elements)
+    # Find number of http status 611, 613 and 614
+    statuses = ['611', '613', '614']
+    time_out_value = 0
+
+    for status in statuses:
+        status_elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '{status}')]")
+        time_out_value += len(status_elements)
 
     global failure_count
     # Check if the value is more or less than 10
