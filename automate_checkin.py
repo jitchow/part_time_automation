@@ -129,7 +129,7 @@ async def send_telegram():
 
         if failure_count <= 1:
             if "错误" in caption:
-                await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Hzai883")
+                await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Hzai5522")
 
     print('Sent: ' + caption)
 
