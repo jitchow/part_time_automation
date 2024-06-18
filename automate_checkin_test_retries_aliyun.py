@@ -74,19 +74,34 @@ def take_screenshot(url):
     reset_failure_count_if_new_day()  # Check if we need to reset the failure count
 
     caption = ""
-    itdog_url = os.getenv('LINK_ALIYUN')
+    aliyun_zh_link = os.getenv('LINK_ALIYUN_ZH')
     
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     edge_options = Options()
     edge_options.add_argument('--disable-cloud-management')
     edge_options.add_argument('--disable-extensions')
     driver = webdriver.Edge(service=service, options=edge_options)
-    driver.get(itdog_url)
+
+    driver.get(aliyun_zh_link)
+
+    driver.maximize_window()
+    time.sleep(2)
 
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-
-    # Wait for the page to load and click the first span element
     wait = WebDriverWait(driver, 10)
+
+    # Wait until the language menu is present
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "ul.langs-wrap"))
+    )
+    # Click the <span> element containing "简体中文"
+    driver.execute_script("document.querySelector('a[data-lang=\"zh\"] span').click();")
+    time.sleep(30)
+
+    # Redirect
+    aliyun_link = os.getenv('LINK_ALIYUN')
+    driver.get(aliyun_link)
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
     final_url = get_final_url(url)
     # Input the URL into the text field
@@ -101,13 +116,13 @@ def take_screenshot(url):
 
     # Click on the label with the text "Operator"
     operator_label = wait.until(
-        EC.element_to_be_clickable((By.XPATH, "//label[text()='Operator']"))
+        EC.element_to_be_clickable((By.XPATH, "//label[text()='运营商']"))
     )
     operator_label.click()
 
     # Wait for the dropdown options to be available and select the "China-Mobile" option
     china_mobile_option = wait.until(
-        EC.element_to_be_clickable((By.XPATH, "//li[@role='option' and @title='China-Mobile']"))
+        EC.element_to_be_clickable((By.XPATH, "//li[@role='option' and @title='移动']"))
     )
     china_mobile_option.click()
     time.sleep(5)
@@ -143,10 +158,6 @@ def take_screenshot(url):
     # Scroll the element into view using JavaScript
     driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
     time.sleep(2)  # Add a delay for scrolling to complete
-
-    # Make the page full screen
-    driver.maximize_window()
-    time.sleep(2)  # Add a delay for maximizing the window
 
     # Take a screenshot
     driver.save_screenshot('screenshot.png')
