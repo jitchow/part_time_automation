@@ -127,13 +127,6 @@ def take_screenshot(url):
     china_mobile_option.click()
     time.sleep(5)
 
-    # Click on the "status" element
-    status_icon = wait.until(
-        EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
-    )
-    status_icon.click()
-    time.sleep(2)
-
     # Find number of http status 611, 613 and 614
     statuses = ['611', '613', '614']
     time_out_value = 0
@@ -158,6 +151,12 @@ def take_screenshot(url):
     # Scroll the element into view using JavaScript
     driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
     time.sleep(2)  # Add a delay for scrolling to complete
+
+    # Click on the "status" element
+    status_icon = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
+    )
+    status_icon.click()
 
     # Take a screenshot
     driver.save_screenshot('screenshot.png')
