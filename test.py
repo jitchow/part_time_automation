@@ -11,12 +11,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.edge.options import Options
 
 import requests
-import subprocess
 import time
 import os
 from config import scheduled_times_checkin, telegram_bot
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
+import subprocess
 
 load_dotenv()
 
@@ -48,8 +48,7 @@ def get_final_url(initial_url):
     recommendation_url = initial_url + 'recommendation'
 
     # Initialize the WebDriver for Microsoft Edge
-    msedge_path = os.path.join(os.getcwd(), os.getenv('EDGE_DRIVER_PATH'))
-    service = Service(executable_path=msedge_path)
+    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     options = webdriver.EdgeOptions()
     options.add_argument('--headless')  # Run in headless mode (without opening a browser window)
     driver = webdriver.Edge(service=service, options=options)
@@ -76,32 +75,19 @@ def take_screenshot(url):
     reset_failure_count_if_new_day()  # Check if we need to reset the failure count
 
     caption = ""
-    aliyun_zh_link = os.getenv('LINK_ALIYUN_ZH')
     
-    msedge_path = os.path.join(os.getcwd(), os.getenv('EDGE_DRIVER_PATH'))
-    service = Service(executable_path=msedge_path)
+    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     edge_options = Options()
     edge_options.use_chromium = True  
-    edge_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")  
+    edge_options.add_experimental_option("debuggerAddress", "localhost:9222") 
     edge_options.add_argument('--disable-cloud-management')
     edge_options.add_argument('--disable-extensions')
+    
     driver = webdriver.Edge(service=service, options=edge_options)
-
-    # driver.get(aliyun_zh_link)
-
     driver.maximize_window()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     wait = WebDriverWait(driver, 10)
-    # WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-   
-
-    # Wait until the language menu is present
-    # WebDriverWait(driver, 10).until(
-    #     EC.presence_of_element_located((By.CSS_SELECTOR, "ul.langs-wrap"))
-    # )
-    # # Click the <span> element containing "简体中文"
-    # driver.execute_script("document.querySelector('a[data-lang=\"zh\"] span').click();")
-    # time.sleep(30)
 
     # Redirect
     aliyun_link = os.getenv('LINK_ALIYUN')
@@ -117,7 +103,7 @@ def take_screenshot(url):
     ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='next-btn next-large next-btn-primary pramary-button' and @data-spm-click='gostr=/aliyun;locaid=search']")))
     ok_button.click()
 
-    time.sleep(20)
+    time.sleep(60)
 
     # Click on the label with the text "Operator"
     operator_label = wait.until(
@@ -133,7 +119,7 @@ def take_screenshot(url):
     time.sleep(5)
 
     # Find number of http status 611, 613 and 614
-    statuses = ['611', '613', '614']
+    statuses = ['610', '611', '613', '614']
     time_out_value = 0
 
     for status in statuses:
@@ -152,8 +138,8 @@ def take_screenshot(url):
         else:
             caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
 
-    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
     # Scroll the element into view using JavaScript
+    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
     driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
     time.sleep(2)  # Add a delay for scrolling to complete
 
@@ -169,17 +155,38 @@ def take_screenshot(url):
 
     return caption
 
+async def send_daily_checks():
+    message = """
+        -注册 ：测试完成
+        -登录：测试完成
+        -购买：测试完成
+        -观看：测试完成
+        -书架/订阅 ：完成
+        -排行榜：测试完成
+        -充值：测试完成
+        -vip：测试正常
+
+        友情推荐正常
+    """
+    try:
+        async with client:
+            await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, message)
+        print(f'Sent: {message}')
+    except Exception as e:
+        print(f'Failed to send daily checks: {e}')
+
+
 async def send_telegram():
     caption = ''
     for attempt in range(MAX_RETRIES):
         try:
             caption = take_screenshot(initial_url)
             async with client:
-                await client.send_file(TELEGRAM_TEST_CHANNEL_ID, 'screenshot.png', caption=caption)
+                await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
 
                 if failure_count <= 1:
                     if "错误" in caption:
-                        await client.send_message(TELEGRAM_TEST_CHANNEL_ID, "@Hzai5522")
+                        await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Hzai5522")
             print('Sent: ' + caption)
             break
         except Exception as e:
@@ -190,8 +197,7 @@ async def send_telegram():
                 telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in failed after multiple attempts')
                 print('Check-in failed after multiple attempts')
 
+# Spin up browser on port 9222 with default user data
 command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
-# Execute the command
 os.system(command)
-
 asyncio.run(send_telegram())

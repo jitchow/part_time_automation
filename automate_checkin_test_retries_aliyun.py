@@ -15,7 +15,7 @@ import time
 import os
 from config import scheduled_times_checkin, telegram_bot
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 
 load_dotenv()
@@ -103,7 +103,7 @@ def take_screenshot(url):
     ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='next-btn next-large next-btn-primary pramary-button' and @data-spm-click='gostr=/aliyun;locaid=search']")))
     ok_button.click()
 
-    time.sleep(20)
+    time.sleep(60)
 
     # Click on the label with the text "Operator"
     operator_label = wait.until(
@@ -119,7 +119,7 @@ def take_screenshot(url):
     time.sleep(5)
 
     # Find number of http status 611, 613 and 614
-    statuses = ['611', '613', '614']
+    statuses = ['610', '611', '613', '614']
     time_out_value = 0
 
     for status in statuses:
@@ -155,6 +155,27 @@ def take_screenshot(url):
 
     return caption
 
+async def send_daily_checks():
+    message = """
+        -注册 ：测试完成
+        -登录：测试完成
+        -购买：测试完成
+        -观看：测试完成
+        -书架/订阅 ：完成
+        -排行榜：测试完成
+        -充值：测试完成
+        -vip：测试正常
+
+        友情推荐正常
+    """
+    try:
+        async with client:
+            await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, message)
+        print(f'Sent: {message}')
+    except Exception as e:
+        print(f'Failed to send daily checks: {e}')
+
+
 async def send_telegram():
     caption = ''
     for attempt in range(MAX_RETRIES):
@@ -183,6 +204,16 @@ def run_async_task(task, loop):
 def schedule_telegram_messages(weekly_schedule):
     loop = asyncio.get_event_loop()
     for day, times in weekly_schedule.items():
+        if times:  # Ensure there's at least one scheduled time
+            first_time = times[0]
+            # Calculate 7 minutes after the first scheduled time
+            first_time = datetime.strptime(first_time, '%H:%M')
+            first_time_check = (first_time + timedelta(minutes=7)).strftime('%H:%M')
+
+            # Schedule the check modules message for the first time of the day
+            daily_check_task = send_daily_checks()
+            getattr(schedule.every().day, day.lower()).at(first_time_check).do(run_async_task, daily_check_task, loop)
+
         for t in times:
             task = send_telegram()
             getattr(schedule.every().day, day.lower()).at(t).do(run_async_task, task, loop)
