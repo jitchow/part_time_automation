@@ -16,6 +16,7 @@ import os
 from config import scheduled_times_checkin, telegram_bot
 from dotenv import load_dotenv
 from datetime import datetime
+import subprocess
 
 load_dotenv()
 
@@ -78,25 +79,16 @@ def take_screenshot(url):
     
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     edge_options = Options()
+    edge_options.use_chromium = True  
+    edge_options.add_experimental_option("debuggerAddress", "localhost:9222") 
     edge_options.add_argument('--disable-cloud-management')
     edge_options.add_argument('--disable-extensions')
+    
     driver = webdriver.Edge(service=service, options=edge_options)
-
-    driver.get(aliyun_zh_link)
-
     driver.maximize_window()
-    time.sleep(2)
 
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     wait = WebDriverWait(driver, 10)
-
-    # Wait until the language menu is present
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, "ul.langs-wrap"))
-    )
-    # Click the <span> element containing "简体中文"
-    driver.execute_script("document.querySelector('a[data-lang=\"zh\"] span').click();")
-    time.sleep(30)
 
     # Redirect
     aliyun_link = os.getenv('LINK_ALIYUN')
@@ -147,8 +139,8 @@ def take_screenshot(url):
         else:
             caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
 
-    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
     # Scroll the element into view using JavaScript
+    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
     driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
     time.sleep(2)  # Add a delay for scrolling to complete
 
@@ -198,6 +190,18 @@ def schedule_telegram_messages(weekly_schedule):
 
 if __name__ == "__main__":
     try:
+        # Run driver on port 9222
+        command = [
+            'start', 
+            'msedge.exe', 
+            '-remote-debugging-port=9222', 
+            '--user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
+        ]
+
+        # Execute the command
+        subprocess.run(command, shell=True)
+
+        asyncio.run(send_telegram())
         schedule_telegram_messages(scheduled_times_checkin)
         while True:
             schedule.run_pending()
