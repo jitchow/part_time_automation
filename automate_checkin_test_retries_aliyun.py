@@ -10,21 +10,22 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.edge.options import Options
 
-import requests
+import psutil
 import time
 import os
 from config import scheduled_times_checkin, telegram_bot
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-import subprocess
+import constants
 
 load_dotenv()
 
 # Use your own values from my.telegram.org
-TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID'))
-TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
-TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
-TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
+TELEGRAM_API_ID = constants.TELEGRAM_API_ID
+TELEGRAM_API_HASH = constants.TELEGRAM_API_HASH
+TELEGRAM_KEFU_CHANNEL_ID = constants.TELEGRAM_KEFU_CHANNEL_ID
+TELEGRAM_TEST_CHANNEL_ID = constants.TELEGRAM_TEST_CHANNEL_ID
+EDGE_DRIVER_PATH = constants.EDGE_DRIVER_PATH
 
 initial_url = "https://jm18.me/"
 
@@ -44,11 +45,26 @@ def reset_failure_count_if_new_day():
         failure_count = 0
         last_checked_day = current_day
 
+def kill_processes_on_port(port):
+    # Get a list of all processes
+    processes = psutil.process_iter(['pid', 'name', 'connections'])
+    
+    for proc in processes:
+        try:
+            # Iterate over connections of each process
+            for conn in proc.info['connections']:
+                if conn.laddr.port == port:
+                    print(f"Killing process {proc.info['name']} (PID: {proc.info['pid']}) on port {port}")
+                    proc.terminate()
+                    proc.wait()  # Wait for the process to be terminated
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
+            pass
+
 def get_final_url(initial_url):
     recommendation_url = initial_url + 'recommendation'
 
     # Initialize the WebDriver for Microsoft Edge
-    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
+    service = Service(executable_path=EDGE_DRIVER_PATH)
     options = webdriver.EdgeOptions()
     options.add_argument('--headless')  # Run in headless mode (without opening a browser window)
     driver = webdriver.Edge(service=service, options=options)
@@ -72,11 +88,18 @@ def get_final_url(initial_url):
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
 def take_screenshot(url):
+    # Clean any processes on port 9222
+    kill_processes_on_port(9222)
+
+    # Spin up browser on port 9222 with default user data
+    command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
+    os.system(command)
+
     reset_failure_count_if_new_day()  # Check if we need to reset the failure count
 
     caption = ""
     
-    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
+    service = Service(executable_path=EDGE_DRIVER_PATH)
     edge_options = Options()
     edge_options.use_chromium = True  
     edge_options.add_experimental_option("debuggerAddress", "localhost:9222") 
@@ -90,7 +113,7 @@ def take_screenshot(url):
     wait = WebDriverWait(driver, 10)
 
     # Redirect
-    aliyun_link = os.getenv('LINK_ALIYUN')
+    aliyun_link = constants.LINK_ALIYUN
     driver.get(aliyun_link)
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
@@ -103,7 +126,7 @@ def take_screenshot(url):
     ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='next-btn next-large next-btn-primary pramary-button' and @data-spm-click='gostr=/aliyun;locaid=search']")))
     ok_button.click()
 
-    time.sleep(60)
+    time.sleep(20)
 
     # Click on the label with the text "Operator"
     operator_label = wait.until(
@@ -152,21 +175,13 @@ def take_screenshot(url):
     # Take a screenshot
     driver.save_screenshot('screenshot.png')
     driver.quit()
+    kill_processes_on_port(9222)
 
     return caption
 
 async def send_daily_checks():
     message = """
-        -注册 ：测试完成
-        -登录：测试完成
-        -购买：测试完成
-        -观看：测试完成
-        -书架/订阅 ：完成
-        -排行榜：测试完成
-        -充值：测试完成
-        -vip：测试正常
-
-        友情推荐正常
+    -注册 ：测试完成\n-登录：测试完成\n-购买：测试完成\n-观看：测试完成\n-书架/订阅 ：完成\n-排行榜：测试完成\n-充值：测试完成\n-vip：测试正常\n\n友情推荐正常
     """
     try:
         async with client:
@@ -186,7 +201,7 @@ async def send_telegram():
 
                 if failure_count <= 1:
                     if "错误" in caption:
-                        await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Hzai5522")
+                        await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, constants.TELEGRAM_HUAZAI_ID)
             print('Sent: ' + caption)
             break
         except Exception as e:
@@ -220,10 +235,6 @@ def schedule_telegram_messages(weekly_schedule):
 
 if __name__ == "__main__":
     try:
-        # Spin up browser on port 9222 with default user data
-        command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
-        os.system(command)
-
         schedule_telegram_messages(scheduled_times_checkin)
         while True:
             schedule.run_pending()

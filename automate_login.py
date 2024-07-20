@@ -13,12 +13,13 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from config import scheduled_times_login, telegram_bot, login_days_midnight
+import constants
 
 # Use your own values from my.telegram.org
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
-CUST_LIST_JSON = os.getenv('CUST_LIST_JSON')
-
+TELEGRAM_BOT_TOKEN = constants.TELEGRAM_BOT_TOKEN
+TELEGRAM_TEST_CHANNEL_ID = constants.TELEGRAM_TEST_CHANNEL_ID
+CUST_LIST_JSON = constants.CUST_LIST_JSON
+EDGE_DRIVER_PATH = constants.EDGE_DRIVER_PATH
 
 def is_time_between(start_time, end_time, check_time=None):
     check_time = check_time or datetime.now().strftime('%H:%M')
@@ -101,19 +102,19 @@ def main():
                 
             if open_time is not None and close_time is not None and is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
-                service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
+                service = Service(executable_path=EDGE_DRIVER_PATH)
                 edge_options = Options()
                 edge_options.add_argument('--disable-cloud-management')
                 edge_options.add_argument('--disable-extensions')
                 driver = webdriver.Edge(service=service, options=edge_options)
-                driver.get(os.getenv('LINK_LOGIN'))
+                driver.get(constants.LINK_LOGIN)
 
                 # Fill in the username and password fields
                 username_input = driver.find_element(By.CLASS_NAME, 'ivu-input-large')
                 password_input = driver.find_element(By.XPATH, '//input[@type="password"]')
 
-                username_input.send_keys(os.getenv('USERNAME_KEFU'))
-                password_input.send_keys(os.getenv('PASSWORD_KEFU'))
+                username_input.send_keys(constants.USERNAME_KEFU)
+                password_input.send_keys(constants.PASSWORD_KEFU)
 
                 # Click the login button
                 driver.find_element(By.XPATH, '//button[contains(@class, "ivu-btn-primary")]').click()

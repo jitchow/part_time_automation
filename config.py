@@ -1,10 +1,11 @@
 import telebot
 import os
+import constants
 from dotenv import load_dotenv
 load_dotenv()
 
 # Bot Instance
-telegram_bot = telebot.TeleBot(os.getenv('TELEGRAM_BOT_TOKEN'))
+telegram_bot = telebot.TeleBot(constants.TELEGRAM_BOT_TOKEN)
 
 # Back-End
 MODE = 'front' # front / back
