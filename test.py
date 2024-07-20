@@ -82,7 +82,7 @@ def take_screenshot(url):
     service = Service(executable_path=msedge_path)
     edge_options = Options()
     edge_options.use_chromium = True  
-    edge_options.add_experimental_option("debuggerAddress", "localhost:9222")  
+    edge_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")  
     edge_options.add_argument('--disable-cloud-management')
     edge_options.add_argument('--disable-extensions')
     driver = webdriver.Edge(service=service, options=edge_options)
@@ -190,13 +190,8 @@ async def send_telegram():
                 telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in failed after multiple attempts')
                 print('Check-in failed after multiple attempts')
 
-command = [
-    'start', 
-    'msedge.exe', 
-    '-remote-debugging-port=9222', 
-    '--user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
-]
-
+command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
 # Execute the command
-subprocess.run(command, shell=True)
+os.system(command)
+
 asyncio.run(send_telegram())

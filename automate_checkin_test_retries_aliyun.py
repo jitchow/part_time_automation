@@ -5,7 +5,7 @@ from telethon import TelegramClient
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.edge.options import Options
@@ -75,7 +75,6 @@ def take_screenshot(url):
     reset_failure_count_if_new_day()  # Check if we need to reset the failure count
 
     caption = ""
-    aliyun_zh_link = os.getenv('LINK_ALIYUN_ZH')
     
     service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
     edge_options = Options()
@@ -190,18 +189,10 @@ def schedule_telegram_messages(weekly_schedule):
 
 if __name__ == "__main__":
     try:
-        # Run driver on port 9222
-        command = [
-            'start', 
-            'msedge.exe', 
-            '-remote-debugging-port=9222', 
-            '--user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
-        ]
+        # Spin up browser on port 9222 with default user data
+        command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
+        os.system(command)
 
-        # Execute the command
-        subprocess.run(command, shell=True)
-
-        asyncio.run(send_telegram())
         schedule_telegram_messages(scheduled_times_checkin)
         while True:
             schedule.run_pending()
