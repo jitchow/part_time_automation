@@ -141,6 +141,17 @@ def take_screenshot(url):
     china_mobile_option.click()
     time.sleep(5)
 
+    # Scroll the element into view using JavaScript
+    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
+    driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
+    time.sleep(2)  # Add a delay for scrolling to complete
+
+    # Click on the "status" element
+    status_icon = wait.until(
+        EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
+    )
+    status_icon.click()
+
     # Find number of http status 611, 613 and 614
     statuses = ['610', '611', '613', '614']
     time_out_value = 0
@@ -160,17 +171,6 @@ def take_screenshot(url):
             caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
         else:
             caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
-
-    # Scroll the element into view using JavaScript
-    detection_data_div = driver.find_element(By.CSS_SELECTOR, 'div.show-detection-data')
-    driver.execute_script("arguments[0].scrollIntoView(true);", detection_data_div)
-    time.sleep(2)  # Add a delay for scrolling to complete
-
-    # Click on the "status" element
-    status_icon = wait.until(
-        EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and contains(@class, 'next-table-sort next-table-header-icon')]"))
-    )
-    status_icon.click()
 
     # Take a screenshot
     driver.save_screenshot('screenshot.png')
