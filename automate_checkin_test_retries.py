@@ -8,81 +8,70 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.edge.options import Options
 
 import requests
 import time
 import os
+import psutil
 from config import scheduled_times_checkin, telegram_bot
-from dotenv import load_dotenv
 from datetime import datetime
-
-load_dotenv()
+import constants
 
 # Use your own values from my.telegram.org
-TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID'))
-TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
-TELEGRAM_KEFU_CHANNEL_ID = int(os.getenv('TELEGRAM_KEFU_CHANNEL_ID'))
-TELEGRAM_TEST_CHANNEL_ID = int(os.getenv('TELEGRAM_TEST_CHANNEL_ID'))
+TELEGRAM_API_ID = constants.TELEGRAM_API_ID
+TELEGRAM_API_HASH = constants.TELEGRAM_API_HASH
+TELEGRAM_KEFU_CHANNEL_ID = constants.TELEGRAM_KEFU_CHANNEL_ID
+TELEGRAM_TEST_CHANNEL_ID = constants.TELEGRAM_TEST_CHANNEL_ID
 
-initial_url = "https://www.inb619.com/"
-
-client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
-failure_count = 0
-last_checked_day = datetime.now().day
+telegram_client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
+LAST_CHECKED_DAY = datetime.now().day
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # in seconds
 
-def reset_failure_count_if_new_day():
-    global failure_count, last_checked_day
-    current_day = datetime.now().day
-    current_time = datetime.now().strftime('%H:%M')
-
-    if current_day != last_checked_day and current_time > '03:05':
-        failure_count = 0
-        last_checked_day = current_day
-
 def get_final_url(initial_url):
-    response = requests.head(initial_url, allow_redirects=True)
-    final_url = response.url
+    response = requests.get(initial_url, allow_redirects=True)
+    return response.url
 
-    recommendation_url = final_url + 'recommendation'
-
-    # Initialize the WebDriver for Microsoft Edge
-    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
-    options = webdriver.EdgeOptions()
-    options.add_argument('--headless')  # Run in headless mode (without opening a browser window)
-    driver = webdriver.Edge(service=service, options=options)
-
-    try:
-        # Open the webpage
-        driver.get(recommendation_url)
-        
-        # Wait for the element to be present
-        element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//div[text()='禁漫']/parent::a"))
-        )
-
-        # Get the link from the 'href' attribute of the parent 'a' tag
-        final_url = element.get_attribute('href')
-        return final_url
-
-    finally:
-        driver.quit()
-
+def kill_processes_on_port(port):
+    # Get a list of all processes
+    processes = psutil.process_iter(['pid', 'name', 'connections'])
+    
+    for proc in processes:
+        try:
+            # Iterate over connections of each process
+            for conn in proc.info['connections']:
+                if conn.laddr.port == port:
+                    print(f"Killing process {proc.info['name']} (PID: {proc.info['pid']}) on port {port}")
+                    proc.terminate()
+                    proc.wait()  # Wait for the process to be terminated
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
+            pass
 
 # Function to take a screenshot with interaction, controlled scrolling, and full-screen capture
-def take_screenshot(url):
-    reset_failure_count_if_new_day()  # Check if we need to reset the failure count
+def take_screenshot(website, url):
+    # Clean any processes on port 9222
+    kill_processes_on_port(9222)
+
+    # Spin up browser on port 9222 with default user data
+    command = 'start msedge.exe -remote-debugging-port=9222 --user-data-dir="C:\\Users\\JC\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default"'
+    os.system(command)
 
     caption = ""
-    itdog_url = os.getenv('LINK_ITDOG')
     
-    service = Service(executable_path=os.getenv('EDGE_DRIVER_PATH'))
-    driver = webdriver.Edge(service=service)
-    driver.get(itdog_url)
+    service = Service(executable_path=constants.EDGE_DRIVER_PATH)
+    edge_options = Options()
+    edge_options.use_chromium = True  
+    edge_options.add_experimental_option("debuggerAddress", "localhost:9222") 
+    edge_options.add_argument('--disable-cloud-management')
+    edge_options.add_argument('--disable-extensions')
+    
+    driver = webdriver.Edge(service=service, options=edge_options)
+    driver.get(constants.LINK_ITDOG)
 
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    wait = WebDriverWait(driver, 10)
 
     # Find the input element and submit button
     input_element = driver.find_element(By.ID, 'host')
@@ -90,7 +79,7 @@ def take_screenshot(url):
 
     final_url = get_final_url(url)
     # Add text to the input element
-    input_element.send_keys(final_url)  # Replace 'example.com' with the desired text
+    input_element.send_keys(final_url) 
 
     # Click the submit button
     submit_button.click()
@@ -108,17 +97,11 @@ def take_screenshot(url):
     # Get the value of the "time_out" span and convert it to an integer
     time_out_value = int(time_out_span.text)
 
-    global failure_count
     # Check if the value is more or less than 10
     if time_out_value < 10:
-        failure_count = 0
-        caption = f"{final_url} 打卡 IP正常运行"
+        caption = f"{final_url} {website} 正常运行"
     elif time_out_value >= 10:
-        failure_count += 1
-        if failure_count <= 1:
-            caption = f"{final_url} 打卡 IP运行出现{time_out_value}个错误"
-        else:
-            caption = f"{final_url} 出现{time_out_value}个错误 等待修复"
+        caption = f"{final_url} {website} {time_out_value}错误"
 
     # Find the element with class "mt-3" and style "display:flex;"
     element = driver.find_element(By.XPATH, "//div[@class='mt-3' and @style='display:flex;']")
@@ -133,29 +116,39 @@ def take_screenshot(url):
     # Take a screenshot
     driver.save_screenshot('screenshot.png')
     driver.quit()
-
-    return caption
+    kill_processes_on_port(9222)
+    
+    return caption, time_out_value
 
 async def send_telegram():
+    tag_huazai_flag = False
     caption = ''
-    for attempt in range(MAX_RETRIES):
-        try:
-            caption = take_screenshot(initial_url)
-            async with client:
-                await client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
 
-                if failure_count <= 1:
-                    if "错误" in caption:
-                        await client.send_message(TELEGRAM_KEFU_CHANNEL_ID, "@Hzai5522")
-            print('Sent: ' + caption)
-            break
-        except Exception as e:
-            print(f'Attempt {attempt + 1} failed: {e}')
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
-            else:
-                telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in failed after multiple attempts')
-                print('Check-in failed after multiple attempts')
+    for website, url in constants.INS_AV_WEBSITES.items():
+        for attempt in range(MAX_RETRIES):
+            try:
+                caption, time_out_value = take_screenshot(website, url)
+
+                if time_out_value >= 30:
+                    tag_huazai_flag = True
+
+                async with telegram_client:
+                    await telegram_client.send_file(TELEGRAM_KEFU_CHANNEL_ID, 'screenshot.png', caption=caption)
+
+                print('Sent: ' + caption)
+                break
+            except Exception as e:
+                print(f'Attempt {attempt + 1} failed: {e}')
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_DELAY)
+                else:
+                    telegram_bot.send_message(TELEGRAM_TEST_CHANNEL_ID, 'Check-in failed after multiple attempts')
+                    print('Check-in failed after multiple attempts')
+
+        
+    if tag_huazai_flag == True:
+        async with telegram_client:
+            await telegram_client.send_message(TELEGRAM_KEFU_CHANNEL_ID, constants.TELEGRAM_HUAZAI_ID)
 
 def run_async_task(task, loop):
     asyncio.set_event_loop(loop)
