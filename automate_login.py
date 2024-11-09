@@ -12,7 +12,7 @@ import json
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from config import scheduled_times_login, telegram_bot, login_days_midnight
+from config import scheduled_times_login, telegram_bot
 import constants
 
 # Use your own values from my.telegram.org
@@ -63,9 +63,7 @@ def have_new_message(driver):
     isListSame = is_list_same(new_names, old_names)
     isLastChatKefu = is_last_chat_item_right_box(driver)
 
-    # if not isListSame or not isLastChatKefu:
-    #     return True
-    if not isLastChatKefu:
+    if not isListSame or not isLastChatKefu:
         return True
     return False
 
@@ -93,14 +91,10 @@ def main():
         current_time = datetime.now().strftime('%H:%M')
         current_day = datetime.now().strftime('%A')  # Get the current day of the week
 
-        if current_day in scheduled_times_login or current_day in login_days_midnight:
-            open_time, close_time = [None, None]
-            if (current_day in login_days_midnight) and (current_time < '03:05'):
-                open_time, close_time = ['00:00', '03:00']
-            elif current_day in scheduled_times_login:
-                open_time, close_time = scheduled_times_login[current_day]
-                
-            if open_time is not None and close_time is not None and is_time_between(open_time, close_time, current_time):
+        if current_day in scheduled_times_login: 
+            open_time, close_time = scheduled_times_login.get(current_day, None)
+  
+            if open_time and close_time and is_time_between(open_time, close_time, current_time):
                 # Open the browser and navigate to the specified URL
                 service = Service(executable_path=EDGE_DRIVER_PATH)
                 edge_options = Options()
@@ -124,7 +118,7 @@ def main():
 
                 telegram_send_notification('online')
 
-                # Refresh the page every 2 minutes
+                # Refresh the page
                 while is_time_between(open_time, close_time):
                     try: 
                         WebDriverWait(driver, 10).until(lambda driver: driver.execute_script("return document.readyState") == "complete")
@@ -146,7 +140,7 @@ def main():
                     if haveNewMessage:
                         telegram_send_notification('notification')
 
-                    time.sleep(120)
+                    time.sleep(60)
 
                 # Close the browser when it's time to close
                 driver.find_element(By.XPATH, "//div[@class='status-box']").click()
